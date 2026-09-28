@@ -6,7 +6,7 @@
 "IntervalsView.workIntervalsInSet.label" = "작업 시간 반복 횟수:";
 "IntervalsView.workIntervalsInSet.help" = "긴 휴식 시간 전까지 작업 시간을 몇 번 반복 할 것인지";
 "SettingsView.shortcut.label" = "단축키";
-"SettingsView.stopAfterBreak.label" = "휴식 후 중지";
+"SettingsView.manualNextPhase.label" = "다음 단계 수동 시작";
 "SettingsView.showTimerInMenuBar.label" = "메뉴 막대에서 타이머 보기";
 "SettingsView.launchAtLogin.label" = "로그인 후 실행";
 "SoundsView.isWindupEnabled.label" = "Windup";
@@ -25,3 +25,11 @@
 "TBTimer.onRestStart.skip.title" = "건너뛰기";
 "TBTimer.onRestFinish.title" = "휴식 시간 종료";
 "TBTimer.onRestFinish.body" = "다시 작업을 시작하세요!";
+"IntervalsView.reminderInterval.label" = "반복 알림 간격:";
+"IntervalsView.reminderInterval.off" = "끄기";
+"IntervalsView.reminderInterval.help" = "다음 단계를 시작할 때까지 알림을 반복합니다 (수동 모드 전용)";
+"TBPopoverView.startRest.label" = "휴식 시작";
+"TBPopoverView.startWork.label" = "작업 시작";
+"TBNotification.startRest.title" = "휴식 시작";
+"TBNotification.skipRest.title" = "휴식 건너뛰기";
+"TBNotification.startWork.title" = "작업 시작";

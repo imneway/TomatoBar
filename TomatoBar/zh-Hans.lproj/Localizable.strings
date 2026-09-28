@@ -6,7 +6,7 @@
 "IntervalsView.workIntervalsInSet.label" = "一组中工作的次数:";
 "IntervalsView.workIntervalsInSet.help" = "每组在长时间休息后的工作次数";
 "SettingsView.shortcut.label" = "快捷键";
-"SettingsView.stopAfterBreak.label" = "在休息后停止";
+"SettingsView.manualNextPhase.label" = "手动开始下一阶段";
 "SettingsView.showTimerInMenuBar.label" = "在菜单栏中显示计时器";
 "SettingsView.launchAtLogin.label" = "登录时启动";
 "SoundsView.isWindupEnabled.label" = "发条声";
@@ -25,3 +25,11 @@
 "TBTimer.onRestStart.skip.title" = "跳过";
 "TBTimer.onRestFinish.title" = "休息结束";
 "TBTimer.onRestFinish.body" = "继续努力!";
+"IntervalsView.reminderInterval.label" = "重复提醒间隔:";
+"IntervalsView.reminderInterval.off" = "关闭";
+"IntervalsView.reminderInterval.help" = "未开始下一阶段时重复发送通知（仅手动模式）";
+"TBPopoverView.startRest.label" = "开始休息";
+"TBPopoverView.startWork.label" = "开始工作";
+"TBNotification.startRest.title" = "开始休息";
+"TBNotification.skipRest.title" = "跳过休息";
+"TBNotification.startWork.title" = "开始工作";

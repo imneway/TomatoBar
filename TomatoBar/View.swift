@@ -9,6 +9,7 @@ extension KeyboardShortcuts.Name {
 private struct IntervalsView: View {
     @EnvironmentObject var timer: TBTimer
     private var minStr = NSLocalizedString("IntervalsView.min", comment: "min")
+    private var offStr = NSLocalizedString("IntervalsView.reminderInterval.off", comment: "Off")
 
     var body: some View {
         VStack {
@@ -48,6 +49,19 @@ private struct IntervalsView: View {
             }
             .help(NSLocalizedString("IntervalsView.workIntervalsInSet.help",
                                     comment: "Work intervals in set hint"))
+            Stepper(value: $timer.reminderInterval, in: 0 ... 30) {
+                HStack {
+                    Text(NSLocalizedString("IntervalsView.reminderInterval.label",
+                                           comment: "Reminder interval label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(timer.reminderInterval > 0 ?
+                        String.localizedStringWithFormat(minStr, timer.reminderInterval) :
+                        offStr)
+                }
+            }
+            .help(NSLocalizedString("IntervalsView.reminderInterval.help",
+                                    comment: "Reminder interval hint"))
+            .disabled(!timer.manualNextPhase)
             Spacer().frame(minHeight: 0)
         }
         .padding(4)
@@ -65,9 +79,9 @@ private struct SettingsView: View {
                                        comment: "Shortcut label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Toggle(isOn: $timer.stopAfterBreak) {
-                Text(NSLocalizedString("SettingsView.stopAfterBreak.label",
-                                       comment: "Stop after break label"))
+            Toggle(isOn: $timer.manualNextPhase) {
+                Text(NSLocalizedString("SettingsView.manualNextPhase.label",
+                                       comment: "Start next interval manually label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }.toggleStyle(.switch)
             Toggle(isOn: $timer.showTimerInMenuBar) {
@@ -136,30 +150,62 @@ struct TBPopoverView: View {
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
+    private var startRestLabel = NSLocalizedString("TBPopoverView.startRest.label",
+                                                   comment: "Start break label")
+    private var startWorkLabel = NSLocalizedString("TBPopoverView.startWork.label",
+                                                   comment: "Start work label")
+
+    private var mainButtonLabel: String {
+        switch timer.state {
+        case .idle:
+            return startLabel
+        case .work, .rest:
+            return buttonHovered ? stopLabel : timer.timeLeftString
+        case .workDone:
+            return "\(startRestLabel)  \(timer.timeLeftString)"
+        case .restDone:
+            return "\(startWorkLabel)  \(timer.timeLeftString)"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button {
-                timer.startStop()
-                TBStatusItem.shared.closePopover(nil)
-            } label: {
-                Text(timer.timer != nil ?
-                     (buttonHovered ? stopLabel : timer.timeLeftString) :
-                        startLabel)
-                    /*
-                      When appearance is set to "Dark" and accent color is set to "Graphite"
-                      "defaultAction" button label's color is set to the same color as the
-                      button, making the button look blank. #24
-                     */
-                    .foregroundColor(Color.white)
-                    .font(.system(.body).monospacedDigit())
-                    .frame(maxWidth: .infinity)
+            HStack(spacing: 8) {
+                Button {
+                    if timer.isWaiting {
+                        timer.startNext()
+                    } else {
+                        timer.startStop()
+                    }
+                    TBStatusItem.shared.closePopover(nil)
+                } label: {
+                    Text(mainButtonLabel)
+                        /*
+                          When appearance is set to "Dark" and accent color is set to "Graphite"
+                          "defaultAction" button label's color is set to the same color as the
+                          button, making the button look blank. #24
+                         */
+                        .foregroundColor(Color.white)
+                        .font(.system(.body).monospacedDigit())
+                        .frame(maxWidth: .infinity)
+                }
+                .onHover { over in
+                    buttonHovered = over
+                }
+                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
+
+                /* Overtime can only be stopped from here, notifications have no stop action */
+                if timer.isWaiting {
+                    Button {
+                        timer.startStop()
+                        TBStatusItem.shared.closePopover(nil)
+                    } label: {
+                        Text(stopLabel)
+                    }
+                    .controlSize(.large)
+                }
             }
-            .onHover { over in
-                buttonHovered = over
-            }
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
 
             Picker("", selection: $activeChildView) {
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
