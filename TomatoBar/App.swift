@@ -8,7 +8,9 @@ extension NSImage.Name {
     static let longRest = Self("BarIconLongRest")
 }
 
-private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+/* Menu bar font size, medium weight like the system clock */
+private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: NSFont.menuBarFont(ofSize: 0).pointSize,
+                                                        weight: .medium)
 
 @main
 struct TBApp: App {
@@ -57,15 +59,12 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func setTitle(title: String?) {
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineHeightMultiple = 0.9
-        paragraphStyle.alignment = NSTextAlignment.center
-
         let attributedTitle = NSAttributedString(
             string: title != nil ? " \(title!)" : "",
             attributes: [
                 NSAttributedString.Key.font: digitFont,
-                NSAttributedString.Key.paragraphStyle: paragraphStyle
+                /* Digits have no descenders, lower them to center with the icon */
+                NSAttributedString.Key.baselineOffset: -0.5,
             ]
         )
         statusBarItem?.button?.attributedTitle = attributedTitle
