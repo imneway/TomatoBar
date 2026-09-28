@@ -141,8 +141,70 @@ private struct SoundsView: View {
     }
 }
 
-private enum ChildView {
+private enum ChildView: Int, CaseIterable {
     case intervals, settings, sounds
+
+    var label: String {
+        switch self {
+        case .intervals:
+            return NSLocalizedString("TBPopoverView.intervals.label", comment: "Intervals label")
+        case .settings:
+            return NSLocalizedString("TBPopoverView.settings.label", comment: "Settings label")
+        case .sounds:
+            return NSLocalizedString("TBPopoverView.sounds.label", comment: "Sounds label")
+        }
+    }
+}
+
+/*
+ SwiftUI segmented picker is inset from the edges on macOS,
+ use AppKit control to fill the width and align with the buttons.
+ */
+private struct ChildViewPicker: NSViewRepresentable {
+    @Binding var selection: ChildView
+
+    func makeNSView(context: Context) -> NSSegmentedControl {
+        let control = NSSegmentedControl(labels: ChildView.allCases.map(\.label),
+                                         trackingMode: .selectOne,
+                                         target: context.coordinator,
+                                         action: #selector(Coordinator.selectionChanged(_:)))
+        control.segmentDistribution = .fillEqually
+        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        return control
+    }
+
+    func updateNSView(_ control: NSSegmentedControl, context _: Context) {
+        control.selectedSegment = selection.rawValue
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(selection: $selection)
+    }
+
+    class Coordinator: NSObject {
+        var selection: Binding<ChildView>
+
+        init(selection: Binding<ChildView>) {
+            self.selection = selection
+        }
+
+        @objc func selectionChanged(_ sender: NSSegmentedControl) {
+            selection.wrappedValue = ChildView(rawValue: sender.selectedSegment) ?? .intervals
+        }
+    }
+}
+
+/* Large buttons are capsules since macOS 26, keep the rounded rectangle */
+private struct MainButtonSize: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 12.0, *) {
+            content
+                .controlSize(.large)
+                .buttonBorderShape(.roundedRectangle)
+        } else {
+            content.controlSize(.large)
+        }
+    }
 }
 
 struct TBPopoverView: View {
@@ -200,18 +262,9 @@ struct TBPopoverView: View {
                     }
                 }
             }
+            .modifier(MainButtonSize())
 
-            Picker("", selection: $activeChildView) {
-                Text(NSLocalizedString("TBPopoverView.intervals.label",
-                                       comment: "Intervals label")).tag(ChildView.intervals)
-                Text(NSLocalizedString("TBPopoverView.settings.label",
-                                       comment: "Settings label")).tag(ChildView.settings)
-                Text(NSLocalizedString("TBPopoverView.sounds.label",
-                                       comment: "Sounds label")).tag(ChildView.sounds)
-            }
-            .labelsHidden()
-            .frame(maxWidth: .infinity)
-            .pickerStyle(.segmented)
+            ChildViewPicker(selection: $activeChildView)
 
             GroupBox {
                 switch activeChildView {

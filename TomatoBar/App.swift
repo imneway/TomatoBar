@@ -93,9 +93,12 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     @objc func togglePopover(_ sender: AnyObject?) {
         if popover.isShown {
             closePopover(sender)
-        } else if NSApp.currentEvent?.timestamp != popoverCloseEventTime {
-            /* Unless the same click has just closed the transient popover */
-            showPopover(sender)
+            return
         }
+        /* Skip the click that has just closed the transient popover */
+        if let closeTime = popoverCloseEventTime, NSApp.currentEvent?.timestamp == closeTime {
+            return
+        }
+        showPopover(sender)
     }
 }
