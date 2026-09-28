@@ -25,8 +25,9 @@ struct TBApp: App {
     }
 }
 
-class TBStatusItem: NSObject, NSApplicationDelegate {
+class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var popover = NSPopover()
+    private var popoverCloseEventTime: TimeInterval?
     private var statusBarItem: NSStatusItem?
     static var shared: TBStatusItem!
 
@@ -34,12 +35,16 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         let view = TBPopoverView()
 
         popover.behavior = .transient
+        popover.delegate = self
         popover.contentViewController = NSViewController()
-        popover.contentViewController?.view = NSHostingView(rootView: view)
-        if let contentViewController = popover.contentViewController {
-            popover.contentSize.height = contentViewController.view.intrinsicContentSize.height
-            popover.contentSize.width = 240
+        let hostingView = NSHostingView(rootView: view)
+        let height = hostingView.intrinsicContentSize.height
+        if #available(macOS 13.0, *) {
+            /* Size is fixed here, don't let the hosting view resize the popover on every show */
+            hostingView.sizingOptions = []
         }
+        popover.contentViewController?.view = hostingView
+        popover.contentSize = NSSize(width: 260, height: height)
 
         statusBarItem = NSStatusBar.system.statusItem(
             withLength: NSStatusItem.variableLength
@@ -47,6 +52,8 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         statusBarItem?.button?.imagePosition = .imageLeft
         setIcon(name: .idle)
         statusBarItem?.button?.action = #selector(TBStatusItem.togglePopover(_:))
+        /* Open on press like system menu bar items, not on release */
+        statusBarItem?.button?.sendAction(on: [.leftMouseDown])
     }
 
     func setTitle(title: String?) {
@@ -79,10 +86,15 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         popover.performClose(sender)
     }
 
+    func popoverWillClose(_: Notification) {
+        popoverCloseEventTime = NSApp.currentEvent?.timestamp
+    }
+
     @objc func togglePopover(_ sender: AnyObject?) {
         if popover.isShown {
             closePopover(sender)
-        } else {
+        } else if NSApp.currentEvent?.timestamp != popoverCloseEventTime {
+            /* Unless the same click has just closed the transient popover */
             showPopover(sender)
         }
     }

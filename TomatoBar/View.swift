@@ -64,6 +64,7 @@ private struct IntervalsView: View {
             .disabled(!timer.manualNextPhase)
             Spacer().frame(minHeight: 0)
         }
+        .controlSize(.small)
         .padding(4)
     }
 }
@@ -83,12 +84,12 @@ private struct SettingsView: View {
                 Text(NSLocalizedString("SettingsView.manualNextPhase.label",
                                        comment: "Start next interval manually label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
+            }.toggleStyle(.switch).controlSize(.mini)
             Toggle(isOn: $timer.showTimerInMenuBar) {
                 Text(NSLocalizedString("SettingsView.showTimerInMenuBar.label",
                                        comment: "Show timer in menu bar label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
+            }.toggleStyle(.switch).controlSize(.mini)
                 .onChange(of: timer.showTimerInMenuBar) { _ in
                     timer.updateTimeLeft()
                 }
@@ -96,9 +97,10 @@ private struct SettingsView: View {
                 Text(NSLocalizedString("SettingsView.launchAtLogin.label",
                                        comment: "Launch at login label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
+            }.toggleStyle(.switch).controlSize(.mini)
             Spacer().frame(minHeight: 0)
         }
+        .controlSize(.small)
         .padding(4)
     }
 }
@@ -180,19 +182,12 @@ struct TBPopoverView: View {
                     TBStatusItem.shared.closePopover(nil)
                 } label: {
                     Text(mainButtonLabel)
-                        /*
-                          When appearance is set to "Dark" and accent color is set to "Graphite"
-                          "defaultAction" button label's color is set to the same color as the
-                          button, making the button look blank. #24
-                         */
-                        .foregroundColor(Color.white)
                         .font(.system(.body).monospacedDigit())
                         .frame(maxWidth: .infinity)
                 }
                 .onHover { over in
                     buttonHovered = over
                 }
-                .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
 
                 /* Overtime can only be stopped from here, notifications have no stop action */
@@ -203,7 +198,6 @@ struct TBPopoverView: View {
                     } label: {
                         Text(stopLabel)
                     }
-                    .controlSize(.large)
                 }
             }
 
