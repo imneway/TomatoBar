@@ -39,11 +39,6 @@ class TBNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
             title: NSLocalizedString("TBNotification.startRest.title", comment: "Start break"),
             options: []
         )
-        let actionSkipRestManual = UNNotificationAction(
-            identifier: TBNotification.Action.skipRest.rawValue,
-            title: NSLocalizedString("TBNotification.skipRest.title", comment: "Skip break"),
-            options: []
-        )
         let actionStartWork = UNNotificationAction(
             identifier: TBNotification.Action.startWork.rawValue,
             title: NSLocalizedString("TBNotification.startWork.title", comment: "Start work"),
@@ -61,7 +56,8 @@ class TBNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
         )
         let workDoneCategory = UNNotificationCategory(
             identifier: TBNotification.Category.workDone.rawValue,
-            actions: [actionStartRest, actionSkipRestManual],
+            /* Only one action is shown as a button, more are collapsed into a menu */
+            actions: [actionStartRest],
             intentIdentifiers: []
         )
         let restDoneCategory = UNNotificationCategory(

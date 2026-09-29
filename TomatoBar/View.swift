@@ -210,6 +210,7 @@ private struct MainButtonSize: ViewModifier {
 struct TBPopoverView: View {
     @ObservedObject var timer = TBTimer()
     @State private var buttonHovered = false
+    @State private var lastMainButtonClick = Date.distantPast
     @State private var activeChildView = ChildView.intervals
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
@@ -236,12 +237,21 @@ struct TBPopoverView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Button {
+                    /* Popover stays open, so a double click would undo the first one */
+                    guard Date().timeIntervalSince(lastMainButtonClick) > NSEvent.doubleClickInterval else {
+                        return
+                    }
+                    lastMainButtonClick = Date()
                     if timer.isWaiting {
                         timer.startNext()
                     } else {
                         timer.startStop()
                     }
-                    TBStatusItem.shared.closePopover(nil)
+                    /*
+                     Keep the popover open for the next click, but don't show
+                     "Stop" under the cursor right after starting
+                     */
+                    buttonHovered = false
                 } label: {
                     Text(mainButtonLabel)
                         .font(.system(.body).monospacedDigit())
@@ -256,7 +266,6 @@ struct TBPopoverView: View {
                 if timer.isWaiting {
                     Button {
                         timer.startStop()
-                        TBStatusItem.shared.closePopover(nil)
                     } label: {
                         Text(stopLabel)
                     }
