@@ -15,6 +15,8 @@ class TBTimer: ObservableObject {
     @AppStorage("overrunTimeLimit") var overrunTimeLimit = -60.0
     /* Minutes between repeated reminders while waiting in manual mode, 0 disables them */
     @AppStorage("reminderInterval") var reminderInterval = 0
+    /* Stop waiting in manual mode after this much overtime (seconds), also "hidden" */
+    @AppStorage("overtimeLimit") var overtimeLimit = 3600.0
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
@@ -188,7 +190,12 @@ class TBTimer: ObservableObject {
         DispatchQueue.main.async { [self] in
             updateTimeLeft()
             if isWaiting {
-                remindIfNeeded()
+                /* Most likely forgotten, counting further makes no sense */
+                if Date().timeIntervalSince(finishTime) > overtimeLimit {
+                    stateMachine <-! .startStop
+                } else {
+                    remindIfNeeded()
+                }
                 return
             }
             /* A tick can be queued right before the timer is stopped */
@@ -201,9 +208,10 @@ class TBTimer: ObservableObject {
                  Ticks can be missed during the machine sleep.
                  Stop the timer if it goes beyond an overrun time limit.
                  In manual mode wait for the user anyway, counting overtime
-                 from the planned finish time.
+                 from the planned finish time, unless it's already over the limit.
                  */
-                if timeLeft < overrunTimeLimit, !manualNextPhase {
+                let limit = manualNextPhase ? -overtimeLimit : overrunTimeLimit
+                if timeLeft < limit {
                     stateMachine <-! .startStop
                 } else {
                     stateMachine <-! .timerFired
