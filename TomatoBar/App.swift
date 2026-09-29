@@ -56,6 +56,29 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         statusBarItem?.button?.action = #selector(TBStatusItem.togglePopover(_:))
         /* Open on press like system menu bar items, not on release */
         statusBarItem?.button?.sendAction(on: [.leftMouseDown])
+
+        /*
+         Timer title changes the status item width and moves its window,
+         keep the open popover pointing at the button
+         */
+        for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+            /* Any window, the status item window may be replaced (e.g. on display changes) */
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(statusBarWindowDidChange(_:)),
+                name: name,
+                object: nil
+            )
+        }
+    }
+
+    @objc private func statusBarWindowDidChange(_ notification: Notification) {
+        guard popover.isShown, let button = statusBarItem?.button,
+              notification.object as? NSWindow === button.window
+        else {
+            return
+        }
+        popover.positioningRect = button.bounds
     }
 
     func setTitle(title: String?) {
