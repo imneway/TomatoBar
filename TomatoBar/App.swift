@@ -30,6 +30,10 @@ struct TBApp: App {
 class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var popover = NSPopover()
     private var popoverCloseEventTime: TimeInterval?
+    private var popoverReposition: DispatchWorkItem?
+    /* Status item center the popover is pointing at and popover frame, in screen coordinates */
+    private var popoverAnchorX: CGFloat?
+    private var popoverFrame: NSRect?
     private var statusBarItem: NSStatusItem?
     static var shared: TBStatusItem!
 
@@ -78,7 +82,45 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         else {
             return
         }
-        popover.positioningRect = button.bounds
+        /*
+         AppKit follows the resize right away to an intermediate position,
+         put the popover back before it's drawn there
+         */
+        if let frame = popoverFrame, let popoverWindow = popover.contentViewController?.view.window,
+           popoverWindow.frame != frame
+        {
+            popoverWindow.setFrame(frame, display: true)
+        }
+        /*
+         The window is resized first and moved afterwards, repositioning
+         in between makes the popover jump back and forth. Wait for both.
+         */
+        popoverReposition?.cancel()
+        let reposition = DispatchWorkItem { [weak self] in self?.repositionPopover() }
+        popoverReposition = reposition
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: reposition)
+    }
+
+    private func repositionPopover() {
+        guard popover.isShown, let anchorX = popoverAnchorX, var frame = popoverFrame,
+              let newAnchorX = statusBarItem?.button?.window?.frame.midX,
+              let popoverWindow = popover.contentViewController?.view.window,
+              newAnchorX != anchorX
+        else {
+            return
+        }
+        /* Center on the status item, but keep on screen like AppKit does */
+        frame.origin.x = newAnchorX - frame.width / 2
+        if let visible = popoverWindow.screen?.visibleFrame {
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+        }
+        popoverAnchorX = newAnchorX
+        popoverFrame = frame
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            popoverWindow.animator().setFrame(frame, display: true)
+        }
     }
 
     func setTitle(title: String?) {
@@ -101,6 +143,8 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         if let button = statusBarItem?.button {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
             popover.contentViewController?.view.window?.makeKey()
+            popoverAnchorX = button.window?.frame.midX
+            popoverFrame = popover.contentViewController?.view.window?.frame
         }
     }
 
