@@ -93,6 +93,16 @@ private struct SettingsView: View {
                 .onChange(of: timer.showTimerInMenuBar) { _ in
                     timer.updateTimeLeft()
                 }
+            Toggle(isOn: $timer.suggestStart) {
+                Text(NSLocalizedString("SettingsView.suggestStart.label",
+                                       comment: "Suggest starting label"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }.toggleStyle(.switch).controlSize(.mini)
+                .help(NSLocalizedString("SettingsView.suggestStart.help",
+                                        comment: "Suggest starting hint"))
+                .onChange(of: timer.suggestStart) { _ in
+                    timer.updateAppWatcher()
+                }
             Toggle(isOn: $launchAtLogin.isEnabled) {
                 Text(NSLocalizedString("SettingsView.launchAtLogin.label",
                                        comment: "Launch at login label"))

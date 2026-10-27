@@ -2,7 +2,7 @@ import UserNotifications
 
 enum TBNotification {
     enum Category: String {
-        case restStarted, restFinished, workDone, restDone
+        case restStarted, restFinished, workDone, restDone, startSuggested
     }
 
     enum Action: String {
@@ -65,12 +65,18 @@ class TBNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
             actions: [actionStartWork],
             intentIdentifiers: []
         )
+        let startSuggestedCategory = UNNotificationCategory(
+            identifier: TBNotification.Category.startSuggested.rawValue,
+            actions: [actionStartWork],
+            intentIdentifiers: []
+        )
 
         center.setNotificationCategories([
             restStartedCategory,
             restFinishedCategory,
             workDoneCategory,
             restDoneCategory,
+            startSuggestedCategory,
         ])
     }
 
@@ -100,7 +106,7 @@ class TBNotificationCenter: NSObject, UNUserNotificationCenterDelegate {
             switch TBNotification.Category(rawValue: category) {
             case .workDone:
                 action = .startRest
-            case .restDone:
+            case .restDone, .startSuggested:
                 action = .startWork
             default:
                 break

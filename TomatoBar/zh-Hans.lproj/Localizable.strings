@@ -32,3 +32,7 @@
 "TBPopoverView.startWork.label" = "开始工作";
 "TBNotification.startRest.title" = "开始休息";
 "TBNotification.startWork.title" = "开始工作";
+"SettingsView.suggestStart.label" = "使用工作应用时提醒开始";
+"SettingsView.suggestStart.help" = "未计时却在 Figma、Blender、After Effects、Photoshop、Slack、ChatGPT 或 Claude 中持续工作时发送通知";
+"TBTimer.onStartSuggested.title" = "忘了计时？";
+"TBTimer.onStartSuggested.body" = "你已经工作了一会儿，开始一个工作阶段吧";

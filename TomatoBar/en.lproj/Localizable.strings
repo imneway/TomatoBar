@@ -32,3 +32,7 @@
 "TBPopoverView.startWork.label" = "Start work";
 "TBNotification.startRest.title" = "Start break";
 "TBNotification.startWork.title" = "Start work";
+"SettingsView.suggestStart.label" = "Suggest starting in work apps";
+"SettingsView.suggestStart.help" = "Notify when working in Figma, Blender, After Effects, Photoshop, Slack, ChatGPT or Claude for a while without the timer running";
+"TBTimer.onStartSuggested.title" = "Working without a timer?";
+"TBTimer.onStartSuggested.body" = "You have been at it for a while, start a work interval";

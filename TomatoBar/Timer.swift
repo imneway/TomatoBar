@@ -17,11 +17,16 @@ class TBTimer: ObservableObject {
     @AppStorage("reminderInterval") var reminderInterval = 0
     /* Stop waiting in manual mode after this much overtime (seconds), also "hidden" */
     @AppStorage("overtimeLimit") var overtimeLimit = 3600.0
+    /* Suggest starting the timer when working in the watched apps without it */
+    @AppStorage("suggestStart") var suggestStart = true
+    /* Minutes of work in the watched apps before the suggestion, also "hidden" */
+    @AppStorage("suggestStartAfter") var suggestStartAfter = 5
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
     private var consecutiveWorkIntervals: Int = 0
     private var notificationCenter = TBNotificationCenter()
+    private var appWatcher = TBAppWatcher()
     private var finishTime: Date!
     private var lastReminderTime: Date?
     private var timerFormatter = DateComponentsFormatter()
@@ -93,6 +98,7 @@ class TBTimer: ObservableObject {
         stateMachine.addAnyHandler(.any => .any, handler: { ctx in
             self.state = ctx.toState
             logger.append(event: TBLogEventTransition(fromContext: ctx))
+            self.updateAppWatcher()
         })
 
         stateMachine.addErrorHandler { ctx in fatalError("state machine context: <\(ctx)>") }
@@ -103,6 +109,8 @@ class TBTimer: ObservableObject {
 
         KeyboardShortcuts.onKeyUp(for: .startStopTimer, action: startStop)
         notificationCenter.setActionHandler(handler: onNotificationAction)
+        appWatcher.onThresholdReached = { [weak self] in self?.onStartSuggested() }
+        updateAppWatcher()
 
         let aem: NSAppleEventManager = NSAppleEventManager.shared()
         aem.setEventHandler(self,
@@ -249,6 +257,8 @@ class TBTimer: ObservableObject {
             skipRest()
         case .startRest where state == .workDone, .startWork where state == .restDone:
             startNext()
+        case .startWork where state == .idle:
+            startStop()
         default:
             break
         }
@@ -280,10 +290,31 @@ class TBTimer: ObservableObject {
         )
     }
 
-    private func onWorkStart(context ctx: TBStateMachine.Context) {
-        if ctx.fromState == .workDone || ctx.fromState == .restDone {
-            notificationCenter.clear()
+    /* Only watch the apps while the timer is not running */
+    func updateAppWatcher() {
+        if suggestStart, stateMachine.state == .idle {
+            appWatcher.threshold = TimeInterval(suggestStartAfter * 60)
+            appWatcher.start()
+        } else {
+            appWatcher.stop()
         }
+    }
+
+    private func onStartSuggested() {
+        guard stateMachine.state == .idle else {
+            return
+        }
+        logger.append(event: TBLogEventStartSuggested())
+        notificationCenter.send(
+            title: NSLocalizedString("TBTimer.onStartSuggested.title", comment: "Start suggestion title"),
+            body: NSLocalizedString("TBTimer.onStartSuggested.body", comment: "Start suggestion body"),
+            category: .startSuggested
+        )
+    }
+
+    private func onWorkStart(context ctx: TBStateMachine.Context) {
+        /* Clear the start suggestion or the waiting notification */
+        notificationCenter.clear()
         if ctx.fromState == .workDone, isLongRestDue {
             /* Long break was skipped */
             consecutiveWorkIntervals = 0
