@@ -40,3 +40,9 @@
 "AppsView.add.help" = "Add an app";
 "AppsView.remove.help" = "Remove the selected app";
 "AppsView.add.message" = "Choose apps to watch";
+"AppsView.sec" = "%d s";
+"AppsView.add.choose" = "Choose…";
+"AppsView.suggestStartAfter.label" = "Suggest after:";
+"AppsView.suggestStartAfter.help" = "Time spent in the apps before the suggestion";
+"AppsView.gracePeriod.label" = "Allowed time away:";
+"AppsView.gracePeriod.help" = "Switching to other apps for up to this long doesn't interrupt the work";

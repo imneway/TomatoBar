@@ -19,8 +19,10 @@ class TBTimer: ObservableObject {
     @AppStorage("overtimeLimit") var overtimeLimit = 3600.0
     /* Suggest starting the timer when working in the watched apps without it */
     @AppStorage("suggestStart") var suggestStart = true
-    /* Minutes of work in the watched apps before the suggestion, also "hidden" */
+    /* Minutes of work in the watched apps before the suggestion */
     @AppStorage("suggestStartAfter") var suggestStartAfter = 5
+    /* Seconds away from the watched apps that don't count as a break */
+    @AppStorage("suggestStartGracePeriod") var suggestStartGracePeriod = 90
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
@@ -294,6 +296,7 @@ class TBTimer: ObservableObject {
     func updateAppWatcher() {
         if suggestStart, stateMachine.state == .idle {
             appWatcher.threshold = TimeInterval(suggestStartAfter * 60)
+            appWatcher.gracePeriod = TimeInterval(suggestStartGracePeriod)
             appWatcher.start()
         } else {
             appWatcher.stop()

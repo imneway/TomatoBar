@@ -120,24 +120,111 @@ private struct VolumeSlider: View {
 private struct SoundsView: View {
     @EnvironmentObject var player: TBPlayer
 
-    private var columns = [
-        GridItem(.flexible()),
-        GridItem(.fixed(110))
-    ]
+    private func row(_ label: String, volume: Binding<Double>) -> some View {
+        HStack {
+            Text(label).frame(maxWidth: .infinity, alignment: .leading)
+            VolumeSlider(volume: volume).frame(width: 110)
+        }
+    }
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
-            Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
-                                   comment: "Windup label"))
-            VolumeSlider(volume: $player.windupVolume)
-            Text(NSLocalizedString("SoundsView.isDingEnabled.label",
-                                   comment: "Ding label"))
-            VolumeSlider(volume: $player.dingVolume)
-            Text(NSLocalizedString("SoundsView.isTickingEnabled.label",
-                                   comment: "Ticking label"))
-            VolumeSlider(volume: $player.tickingVolume)
+        /* Not a lazy grid, its ideal height is inflated and would stretch the popover */
+        VStack(spacing: 4) {
+            row(NSLocalizedString("SoundsView.isWindupEnabled.label", comment: "Windup label"),
+                volume: $player.windupVolume)
+            row(NSLocalizedString("SoundsView.isDingEnabled.label", comment: "Ding label"),
+                volume: $player.dingVolume)
+            row(NSLocalizedString("SoundsView.isTickingEnabled.label", comment: "Ticking label"),
+                volume: $player.tickingVolume)
+            Spacer().frame(minHeight: 0)
         }.padding(4)
-        Spacer().frame(minHeight: 0)
+    }
+}
+
+/*
+ Pull-down "+" button listing the running apps, with the open panel as the last resort.
+ AppKit menu is rebuilt every time it opens, so newly launched apps show up.
+ */
+private struct AddAppButton: NSViewRepresentable {
+    @ObservedObject var watcher: TBAppWatcher
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let button = NSPopUpButton(frame: .zero, pullsDown: true)
+        button.controlSize = .small
+        button.imagePosition = .imageOnly
+        (button.cell as? NSPopUpButtonCell)?.arrowPosition = .noArrow
+        /* The first item is the pull-down button's label */
+        button.menu?.addItem(NSMenuItem())
+        button.menu?.items.first?.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
+        button.menu?.delegate = context.coordinator
+        button.toolTip = NSLocalizedString("AppsView.add.help", comment: "Add app hint")
+        return button
+    }
+
+    func updateNSView(_: NSPopUpButton, context: Context) {
+        context.coordinator.watcher = watcher
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(watcher: watcher)
+    }
+
+    class Coordinator: NSObject, NSMenuDelegate {
+        var watcher: TBAppWatcher
+
+        init(watcher: TBAppWatcher) {
+            self.watcher = watcher
+        }
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            let label = menu.items.first
+            menu.removeAllItems()
+            if let label = label {
+                menu.addItem(label)
+            }
+            for app in watcher.runningAppsToAdd {
+                let item = NSMenuItem(title: app.localizedName ?? app.bundleIdentifier ?? "",
+                                      action: #selector(addRunningApp(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = app.bundleURL
+                let icon = app.icon
+                icon?.size = NSSize(width: 16, height: 16)
+                item.image = icon
+                menu.addItem(item)
+            }
+            if menu.items.count > 1 {
+                menu.addItem(.separator())
+            }
+            let choose = NSMenuItem(title: NSLocalizedString("AppsView.add.choose", comment: "Choose app item"),
+                                    action: #selector(chooseApp), keyEquivalent: "")
+            choose.target = self
+            menu.addItem(choose)
+        }
+
+        @objc private func addRunningApp(_ sender: NSMenuItem) {
+            if let url = sender.representedObject as? URL {
+                watcher.add(url: url)
+            }
+        }
+
+        @objc private func chooseApp() {
+            let panel = NSOpenPanel()
+            panel.allowedContentTypes = [.applicationBundle]
+            panel.directoryURL = URL(fileURLWithPath: "/Applications")
+            panel.canChooseDirectories = false
+            panel.allowsMultipleSelection = true
+            panel.message = NSLocalizedString("AppsView.add.message", comment: "Open panel message")
+            NSApp.activate(ignoringOtherApps: true)
+            if panel.runModal() == .OK {
+                for url in panel.urls {
+                    watcher.add(url: url)
+                }
+            }
+            /* Transient popover closes when the panel takes the focus */
+            if !TBStatusItem.shared.isPopoverShown {
+                TBStatusItem.shared.showPopover(nil)
+            }
+        }
     }
 }
 
@@ -145,24 +232,11 @@ private struct AppsView: View {
     @EnvironmentObject var timer: TBTimer
     @ObservedObject var watcher: TBAppWatcher
     @State private var selection: String?
+    private var minStr = NSLocalizedString("IntervalsView.min", comment: "min")
+    private var secStr = NSLocalizedString("AppsView.sec", comment: "sec")
 
-    private func addApp() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = true
-        panel.message = NSLocalizedString("AppsView.add.message", comment: "Open panel message")
-        NSApp.activate(ignoringOtherApps: true)
-        if panel.runModal() == .OK {
-            for url in panel.urls {
-                watcher.add(url: url)
-            }
-        }
-        /* Transient popover closes when the panel takes the focus */
-        if !TBStatusItem.shared.isPopoverShown {
-            TBStatusItem.shared.showPopover(nil)
-        }
+    init(watcher: TBAppWatcher) {
+        self.watcher = watcher
     }
 
     var body: some View {
@@ -177,6 +251,30 @@ private struct AppsView: View {
                 .onChange(of: timer.suggestStart) { _ in
                     timer.updateAppWatcher()
                 }
+            Stepper(value: $timer.suggestStartAfter, in: 1 ... 60) {
+                HStack {
+                    Text(NSLocalizedString("AppsView.suggestStartAfter.label",
+                                           comment: "Suggest after label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(String.localizedStringWithFormat(minStr, timer.suggestStartAfter))
+                }
+            }
+            .help(NSLocalizedString("AppsView.suggestStartAfter.help", comment: "Suggest after hint"))
+            .onChange(of: timer.suggestStartAfter) { _ in
+                timer.updateAppWatcher()
+            }
+            Stepper(value: $timer.suggestStartGracePeriod, in: 0 ... 600, step: 30) {
+                HStack {
+                    Text(NSLocalizedString("AppsView.gracePeriod.label",
+                                           comment: "Grace period label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(String.localizedStringWithFormat(secStr, timer.suggestStartGracePeriod))
+                }
+            }
+            .help(NSLocalizedString("AppsView.gracePeriod.help", comment: "Grace period hint"))
+            .onChange(of: timer.suggestStartGracePeriod) { _ in
+                timer.updateAppWatcher()
+            }
             List(watcher.watchedApps, selection: $selection) { app in
                 HStack(spacing: 4) {
                     Image(nsImage: app.icon)
@@ -188,12 +286,10 @@ private struct AppsView: View {
                 .frame(height: 16)
             }
             .listStyle(.bordered(alternatesRowBackgrounds: true))
-            .frame(maxHeight: .infinity)
+            /* Five rows, the popover is sized to fit the tallest tab */
+            .frame(minHeight: 112, idealHeight: 112, maxHeight: .infinity)
             HStack(spacing: 4) {
-                Button(action: addApp) {
-                    Image(systemName: "plus").frame(width: 12)
-                }
-                .help(NSLocalizedString("AppsView.add.help", comment: "Add app hint"))
+                AddAppButton(watcher: watcher).fixedSize()
                 Button {
                     if let selection = selection {
                         watcher.remove(id: selection)
@@ -212,7 +308,7 @@ private struct AppsView: View {
     }
 }
 
-private enum ChildView: Int, CaseIterable {
+enum ChildView: Int, CaseIterable {
     case intervals, settings, sounds, apps
 
     var label: String {
@@ -281,10 +377,15 @@ private struct MainButtonSize: ViewModifier {
 }
 
 struct TBPopoverView: View {
-    @ObservedObject var timer = TBTimer()
+    @ObservedObject var timer: TBTimer
     @State private var buttonHovered = false
     @State private var lastMainButtonClick = Date.distantPast
-    @State private var activeChildView = ChildView.intervals
+    @State private var activeChildView: ChildView
+
+    init(timer: TBTimer, childView: ChildView = .intervals) {
+        self.timer = timer
+        _activeChildView = State(initialValue: childView)
+    }
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")

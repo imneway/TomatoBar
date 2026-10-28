@@ -53,13 +53,17 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     static var shared: TBStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
-        let view = TBPopoverView()
+        let timer = TBTimer()
+        let view = TBPopoverView(timer: timer)
 
         popover.behavior = .transient
         popover.delegate = self
         popover.contentViewController = NSViewController()
         let hostingView = NSHostingView(rootView: view)
-        let height = hostingView.intrinsicContentSize.height
+        /* Size is fixed, fit the tallest tab */
+        let height = ChildView.allCases.map {
+            NSHostingView(rootView: TBPopoverView(timer: timer, childView: $0)).intrinsicContentSize.height
+        }.max()!
         if #available(macOS 13.0, *) {
             /* Size is fixed here, don't let the hosting view resize the popover on every show */
             hostingView.sizingOptions = []

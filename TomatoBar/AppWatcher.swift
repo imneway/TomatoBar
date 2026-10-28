@@ -79,9 +79,10 @@ class TBAppWatcher: ObservableObject {
     /* Called on the main thread when the threshold is reached */
     var onThresholdReached: (() -> Void)?
 
-    private let sampleInterval: TimeInterval = 5
     /* Time away from the watched apps that doesn't break the session */
-    private let gracePeriod: TimeInterval = 90
+    var gracePeriod: TimeInterval = 90
+
+    private let sampleInterval: TimeInterval = 5
     /* No input for this long means the user has left, even if the app is still in front */
     private let idleLimit: TimeInterval = 3 * 60
     /* Minimum time between suggestions */
@@ -116,6 +117,18 @@ class TBAppWatcher: ObservableObject {
 
     func remove(id: String) {
         watchedApps.removeAll { $0.id == id }
+    }
+
+    /* Regular apps running now that aren't watched yet, to pick from */
+    var runningAppsToAdd: [NSRunningApplication] {
+        NSWorkspace.shared.runningApplications.filter { app in
+            guard app.activationPolicy == .regular, let bundleID = app.bundleIdentifier,
+                  bundleID != Bundle.main.bundleIdentifier, app.bundleURL != nil
+            else {
+                return false
+            }
+            return !watchedApps.contains { $0.matches(bundleID: bundleID) }
+        }.sorted { ($0.localizedName ?? "").localizedCaseInsensitiveCompare($1.localizedName ?? "") == .orderedAscending }
     }
 
     deinit {
