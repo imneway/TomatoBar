@@ -26,7 +26,7 @@ class TBTimer: ObservableObject {
     public let player = TBPlayer()
     private var consecutiveWorkIntervals: Int = 0
     private var notificationCenter = TBNotificationCenter()
-    private var appWatcher = TBAppWatcher()
+    public let appWatcher = TBAppWatcher()
     private var finishTime: Date!
     private var lastReminderTime: Date?
     private var timerFormatter = DateComponentsFormatter()

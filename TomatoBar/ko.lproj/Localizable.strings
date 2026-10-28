@@ -32,7 +32,11 @@
 "TBPopoverView.startWork.label" = "작업 시작";
 "TBNotification.startRest.title" = "휴식 시작";
 "TBNotification.startWork.title" = "작업 시작";
-"SettingsView.suggestStart.label" = "작업 앱 사용 시 시작 제안";
-"SettingsView.suggestStart.help" = "타이머 없이 Figma, Blender, After Effects, Photoshop, Slack, ChatGPT, Claude에서 한동안 작업하면 알립니다";
 "TBTimer.onStartSuggested.title" = "타이머 없이 작업 중인가요?";
 "TBTimer.onStartSuggested.body" = "한동안 작업했습니다, 작업 시간을 시작하세요";
+"TBPopoverView.apps.label" = "앱";
+"AppsView.suggestStart.label" = "타이머 시작 제안";
+"AppsView.suggestStart.help" = "타이머 없이 이 앱에서 한동안 작업하면 알립니다";
+"AppsView.add.help" = "앱 추가";
+"AppsView.remove.help" = "선택한 앱 제거";
+"AppsView.add.message" = "감시할 앱 선택";

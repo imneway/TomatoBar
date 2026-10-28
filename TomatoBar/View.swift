@@ -93,16 +93,6 @@ private struct SettingsView: View {
                 .onChange(of: timer.showTimerInMenuBar) { _ in
                     timer.updateTimeLeft()
                 }
-            Toggle(isOn: $timer.suggestStart) {
-                Text(NSLocalizedString("SettingsView.suggestStart.label",
-                                       comment: "Suggest starting label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch).controlSize(.mini)
-                .help(NSLocalizedString("SettingsView.suggestStart.help",
-                                        comment: "Suggest starting hint"))
-                .onChange(of: timer.suggestStart) { _ in
-                    timer.updateAppWatcher()
-                }
             Toggle(isOn: $launchAtLogin.isEnabled) {
                 Text(NSLocalizedString("SettingsView.launchAtLogin.label",
                                        comment: "Launch at login label"))
@@ -151,8 +141,79 @@ private struct SoundsView: View {
     }
 }
 
+private struct AppsView: View {
+    @EnvironmentObject var timer: TBTimer
+    @ObservedObject var watcher: TBAppWatcher
+    @State private var selection: String?
+
+    private func addApp() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.message = NSLocalizedString("AppsView.add.message", comment: "Open panel message")
+        NSApp.activate(ignoringOtherApps: true)
+        if panel.runModal() == .OK {
+            for url in panel.urls {
+                watcher.add(url: url)
+            }
+        }
+        /* Transient popover closes when the panel takes the focus */
+        if !TBStatusItem.shared.isPopoverShown {
+            TBStatusItem.shared.showPopover(nil)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Toggle(isOn: $timer.suggestStart) {
+                Text(NSLocalizedString("AppsView.suggestStart.label",
+                                       comment: "Suggest starting label"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }.toggleStyle(.switch).controlSize(.mini)
+                .help(NSLocalizedString("AppsView.suggestStart.help",
+                                        comment: "Suggest starting hint"))
+                .onChange(of: timer.suggestStart) { _ in
+                    timer.updateAppWatcher()
+                }
+            List(watcher.watchedApps, selection: $selection) { app in
+                HStack(spacing: 4) {
+                    Image(nsImage: app.icon)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                    Text(app.displayName)
+                        .lineLimit(1)
+                }
+                .frame(height: 16)
+            }
+            .listStyle(.bordered(alternatesRowBackgrounds: true))
+            .frame(maxHeight: .infinity)
+            HStack(spacing: 4) {
+                Button(action: addApp) {
+                    Image(systemName: "plus").frame(width: 12)
+                }
+                .help(NSLocalizedString("AppsView.add.help", comment: "Add app hint"))
+                Button {
+                    if let selection = selection {
+                        watcher.remove(id: selection)
+                        self.selection = nil
+                    }
+                } label: {
+                    Image(systemName: "minus").frame(width: 12)
+                }
+                .disabled(selection == nil)
+                .help(NSLocalizedString("AppsView.remove.help", comment: "Remove app hint"))
+                Spacer()
+            }
+        }
+        .controlSize(.small)
+        .padding(4)
+    }
+}
+
 private enum ChildView: Int, CaseIterable {
-    case intervals, settings, sounds
+    case intervals, settings, sounds, apps
 
     var label: String {
         switch self {
@@ -162,6 +223,8 @@ private enum ChildView: Int, CaseIterable {
             return NSLocalizedString("TBPopoverView.settings.label", comment: "Settings label")
         case .sounds:
             return NSLocalizedString("TBPopoverView.sounds.label", comment: "Sounds label")
+        case .apps:
+            return NSLocalizedString("TBPopoverView.apps.label", comment: "Apps label")
         }
     }
 }
@@ -293,6 +356,8 @@ struct TBPopoverView: View {
                     SettingsView().environmentObject(timer)
                 case .sounds:
                     SoundsView().environmentObject(timer.player)
+                case .apps:
+                    AppsView(watcher: timer.appWatcher).environmentObject(timer)
                 }
             }
 

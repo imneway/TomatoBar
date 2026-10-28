@@ -1,18 +1,58 @@
 import AppKit
 
-/*
- Bundle identifiers (or their prefixes) of the apps whose use means the user
- is working and probably forgot to start the timer
- */
+/* An app whose use means the user is working and probably forgot to start the timer */
+struct TBWatchedApp: Codable, Identifiable, Equatable {
+    /* Bundle identifier or its prefix, Adobe apps append a version suffix */
+    let id: String
+    let name: String
+
+    func matches(bundleID: String) -> Bool {
+        bundleID == id || bundleID.hasPrefix(id)
+    }
+
+    /* Resolved from the installed or running app, so the name follows the system language */
+    var url: URL? {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) ??
+            NSWorkspace.shared.runningApplications
+            .first { $0.bundleIdentifier.map(matches) ?? false }?.bundleURL
+    }
+
+    var displayName: String {
+        url.map { FileManager.default.displayName(atPath: $0.path) } ?? name
+    }
+
+    var icon: NSImage {
+        url.map { NSWorkspace.shared.icon(forFile: $0.path) } ??
+            NSImage(systemSymbolName: "app.dashed", accessibilityDescription: nil)!
+    }
+
+    private static let plistKeys = ["CFBundleDisplayName", "CFBundleName"]
+
+    init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
+
+    init?(url: URL) {
+        guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier else {
+            return nil
+        }
+        let name = Self.plistKeys.lazy
+            .compactMap { bundle.object(forInfoDictionaryKey: $0) as? String }
+            .first ?? url.deletingPathExtension().lastPathComponent
+        self.init(id: id, name: name)
+    }
+}
+
 let defaultWatchedApps = [
-    "com.figma.Desktop",
-    "org.blenderfoundation.blender",
-    "com.adobe.AfterEffects",
-    "com.adobe.Photoshop",
-    "com.tinyspeck.slackmacgap",
-    "com.openai.chat",
-    "com.openai.codex",
-    "com.anthropic.claudefordesktop",
+    TBWatchedApp(id: "com.figma.Desktop", name: "Figma"),
+    TBWatchedApp(id: "org.blenderfoundation.blender", name: "Blender"),
+    TBWatchedApp(id: "com.adobe.AfterEffects", name: "After Effects"),
+    TBWatchedApp(id: "com.adobe.Photoshop", name: "Photoshop"),
+    TBWatchedApp(id: "com.tinyspeck.slackmacgap", name: "Slack"),
+    TBWatchedApp(id: "com.openai.chat", name: "ChatGPT"),
+    TBWatchedApp(id: "com.openai.codex", name: "ChatGPT"),
+    TBWatchedApp(id: "com.anthropic.claudefordesktop", name: "Claude"),
 ]
 
 /*
@@ -24,8 +64,15 @@ let defaultWatchedApps = [
  the grace period and starts over otherwise. Going idle, sleep and screen
  lock start it over too.
  */
-class TBAppWatcher {
-    static let watchedAppsKey = "watchedApps"
+class TBAppWatcher: ObservableObject {
+    private static let watchedAppsKey = "watchedApps"
+
+    @Published var watchedApps: [TBWatchedApp] {
+        didSet {
+            let data = try? JSONEncoder().encode(watchedApps)
+            UserDefaults.standard.set(data, forKey: Self.watchedAppsKey)
+        }
+    }
 
     /* Seconds of work in the watched apps after which the suggestion is made */
     var threshold: TimeInterval = 5 * 60
@@ -52,15 +99,27 @@ class TBAppWatcher {
     }
 
     init() {
-        UserDefaults.standard.register(defaults: [Self.watchedAppsKey: defaultWatchedApps])
+        if let data = UserDefaults.standard.data(forKey: Self.watchedAppsKey),
+           let apps = try? JSONDecoder().decode([TBWatchedApp].self, from: data) {
+            watchedApps = apps
+        } else {
+            watchedApps = defaultWatchedApps
+        }
+    }
+
+    func add(url: URL) {
+        guard let app = TBWatchedApp(url: url), !watchedApps.contains(where: { $0.id == app.id }) else {
+            return
+        }
+        watchedApps.append(app)
+    }
+
+    func remove(id: String) {
+        watchedApps.removeAll { $0.id == id }
     }
 
     deinit {
         stop()
-    }
-
-    static var watchedApps: [String] {
-        UserDefaults.standard.stringArray(forKey: watchedAppsKey) ?? defaultWatchedApps
     }
 
     func start() {
@@ -110,7 +169,7 @@ class TBAppWatcher {
         guard let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
             return false
         }
-        return Self.watchedApps.contains { bundleID == $0 || bundleID.hasPrefix($0) }
+        return watchedApps.contains { $0.matches(bundleID: bundleID) }
     }
 
     /* Seconds since the last keyboard or mouse input */

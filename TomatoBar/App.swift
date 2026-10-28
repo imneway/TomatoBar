@@ -180,6 +180,10 @@ class TBStatusItem: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
+    var isPopoverShown: Bool {
+        popover.isShown
+    }
+
     func closePopover(_ sender: AnyObject?) {
         popover.performClose(sender)
     }
