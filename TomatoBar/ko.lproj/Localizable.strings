@@ -14,10 +14,7 @@
 "SoundsView.isTickingEnabled.label" = "Ticking";
 "TBPopoverView.start.label" = "시작";
 "TBPopoverView.stop.label" = "중지";
-"TBPopoverView.intervals.label" = "간격";
-"TBPopoverView.settings.label" = "설정";
-"TBPopoverView.sounds.label" = "사운드";
-"TBPopoverView.about.label" = "앱 정보";
+"TBPopoverView.settings.label" = "설정…";
 "TBPopoverView.quit.label" = "종료";
 "TBTimer.onRestStart.title" = "시간 종료";
 "TBTimer.onRestStart.short.body" = "짧은 휴식을 취할 시간입니다!";
@@ -34,7 +31,6 @@
 "TBNotification.startWork.title" = "작업 시작";
 "TBTimer.onStartSuggested.title" = "타이머 없이 작업 중인가요?";
 "TBTimer.onStartSuggested.body" = "한동안 작업했습니다, 작업 시간을 시작하세요";
-"TBPopoverView.apps.label" = "앱";
 "AppsView.suggestStart.label" = "타이머 시작 제안";
 "AppsView.suggestStart.help" = "타이머 없이 이 앱에서 한동안 작업하면 알립니다";
 "AppsView.add.help" = "앱 추가";
@@ -46,3 +42,9 @@
 "AppsView.suggestStartAfter.help" = "이 앱에서 이만큼 작업하면 제안합니다";
 "AppsView.gracePeriod.label" = "허용 이탈 시간:";
 "AppsView.gracePeriod.help" = "이 시간 이내로 다른 앱에 전환해도 작업이 중단되지 않습니다";
+"TBPopoverView.setProgress.help" = "이번 세트에서 %d / %d개의 작업 간격 완료";
+"SettingsWindow.general.label" = "일반";
+"SettingsWindow.intervals.label" = "간격";
+"SettingsWindow.sounds.label" = "사운드";
+"SettingsWindow.apps.label" = "앱";
+"SettingsWindow.about.label" = "TomatoBar 정보";

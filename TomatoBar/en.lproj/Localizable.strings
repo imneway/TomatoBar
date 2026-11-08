@@ -14,10 +14,7 @@
 "SoundsView.isTickingEnabled.label" = "Ticking";
 "TBPopoverView.start.label" = "Start";
 "TBPopoverView.stop.label" = "Stop";
-"TBPopoverView.intervals.label" = "Intervals";
-"TBPopoverView.settings.label" = "Settings";
-"TBPopoverView.sounds.label" = "Sounds";
-"TBPopoverView.about.label" = "About";
+"TBPopoverView.settings.label" = "Settings…";
 "TBPopoverView.quit.label" = "Quit";
 "TBTimer.onRestStart.title" = "Time's up";
 "TBTimer.onRestStart.short.body" = "It's time for a short break!";
@@ -34,7 +31,6 @@
 "TBNotification.startWork.title" = "Start work";
 "TBTimer.onStartSuggested.title" = "Working without a timer?";
 "TBTimer.onStartSuggested.body" = "You have been at it for a while, start a work interval";
-"TBPopoverView.apps.label" = "Apps";
 "AppsView.suggestStart.label" = "Suggest starting the timer";
 "AppsView.suggestStart.help" = "Notify when working in these apps for a while without the timer running";
 "AppsView.add.help" = "Add an app";
@@ -46,3 +42,9 @@
 "AppsView.suggestStartAfter.help" = "Time spent in the apps before the suggestion";
 "AppsView.gracePeriod.label" = "Allowed time away:";
 "AppsView.gracePeriod.help" = "Switching to other apps for up to this long doesn't interrupt the work";
+"TBPopoverView.setProgress.help" = "%d of %d work intervals done in this set";
+"SettingsWindow.general.label" = "General";
+"SettingsWindow.intervals.label" = "Intervals";
+"SettingsWindow.sounds.label" = "Sounds";
+"SettingsWindow.apps.label" = "Apps";
+"SettingsWindow.about.label" = "About TomatoBar";

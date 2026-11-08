@@ -2,367 +2,6 @@ import KeyboardShortcuts
 import LaunchAtLogin
 import SwiftUI
 
-extension KeyboardShortcuts.Name {
-    static let startStopTimer = Self("startStopTimer")
-}
-
-private struct IntervalsView: View {
-    @EnvironmentObject var timer: TBTimer
-    private var minStr = NSLocalizedString("IntervalsView.min", comment: "min")
-    private var offStr = NSLocalizedString("IntervalsView.reminderInterval.off", comment: "Off")
-
-    var body: some View {
-        VStack {
-            Stepper(value: $timer.workIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.workIntervalLength.label",
-                                           comment: "Work interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.workIntervalLength))
-                }
-            }
-            Stepper(value: $timer.shortRestIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.shortRestIntervalLength.label",
-                                           comment: "Short rest interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.shortRestIntervalLength))
-                }
-            }
-            Stepper(value: $timer.longRestIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.longRestIntervalLength.label",
-                                           comment: "Long rest interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.longRestIntervalLength))
-                }
-            }
-            .help(NSLocalizedString("IntervalsView.longRestIntervalLength.help",
-                                    comment: "Long rest interval hint"))
-            Stepper(value: $timer.workIntervalsInSet, in: 1 ... 10) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.workIntervalsInSet.label",
-                                           comment: "Work intervals in a set label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("\(timer.workIntervalsInSet)")
-                }
-            }
-            .help(NSLocalizedString("IntervalsView.workIntervalsInSet.help",
-                                    comment: "Work intervals in set hint"))
-            Stepper(value: $timer.reminderInterval, in: 0 ... 30) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.reminderInterval.label",
-                                           comment: "Reminder interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(timer.reminderInterval > 0 ?
-                        String.localizedStringWithFormat(minStr, timer.reminderInterval) :
-                        offStr)
-                }
-            }
-            .help(NSLocalizedString("IntervalsView.reminderInterval.help",
-                                    comment: "Reminder interval hint"))
-            .disabled(!timer.manualNextPhase)
-            Spacer().frame(minHeight: 0)
-        }
-        .controlSize(.small)
-        .padding(4)
-    }
-}
-
-private struct SettingsView: View {
-    @EnvironmentObject var timer: TBTimer
-    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
-
-    var body: some View {
-        VStack {
-            KeyboardShortcuts.Recorder(for: .startStopTimer) {
-                Text(NSLocalizedString("SettingsView.shortcut.label",
-                                       comment: "Shortcut label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            Toggle(isOn: $timer.manualNextPhase) {
-                Text(NSLocalizedString("SettingsView.manualNextPhase.label",
-                                       comment: "Start next interval manually label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch).controlSize(.mini)
-            Toggle(isOn: $timer.showTimerInMenuBar) {
-                Text(NSLocalizedString("SettingsView.showTimerInMenuBar.label",
-                                       comment: "Show timer in menu bar label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch).controlSize(.mini)
-                .onChange(of: timer.showTimerInMenuBar) { _ in
-                    timer.updateTimeLeft()
-                }
-            Toggle(isOn: $launchAtLogin.isEnabled) {
-                Text(NSLocalizedString("SettingsView.launchAtLogin.label",
-                                       comment: "Launch at login label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch).controlSize(.mini)
-            Spacer().frame(minHeight: 0)
-        }
-        .controlSize(.small)
-        .padding(4)
-    }
-}
-
-private struct VolumeSlider: View {
-    @Binding var volume: Double
-
-    var body: some View {
-        Slider(value: $volume, in: 0...2) {
-            Text(String(format: "%.1f", volume))
-        }.gesture(TapGesture(count: 2).onEnded({
-            volume = 1.0
-        }))
-    }
-}
-
-private struct SoundsView: View {
-    @EnvironmentObject var player: TBPlayer
-
-    private func row(_ label: String, volume: Binding<Double>) -> some View {
-        HStack {
-            Text(label).frame(maxWidth: .infinity, alignment: .leading)
-            VolumeSlider(volume: volume).frame(width: 110)
-        }
-    }
-
-    var body: some View {
-        /* Not a lazy grid, its ideal height is inflated and would stretch the popover */
-        VStack(spacing: 4) {
-            row(NSLocalizedString("SoundsView.isWindupEnabled.label", comment: "Windup label"),
-                volume: $player.windupVolume)
-            row(NSLocalizedString("SoundsView.isDingEnabled.label", comment: "Ding label"),
-                volume: $player.dingVolume)
-            row(NSLocalizedString("SoundsView.isTickingEnabled.label", comment: "Ticking label"),
-                volume: $player.tickingVolume)
-            Spacer().frame(minHeight: 0)
-        }.padding(4)
-    }
-}
-
-/*
- Pull-down "+" button listing the running apps, with the open panel as the last resort.
- AppKit menu is rebuilt every time it opens, so newly launched apps show up.
- */
-private struct AddAppButton: NSViewRepresentable {
-    @ObservedObject var watcher: TBAppWatcher
-
-    func makeNSView(context: Context) -> NSPopUpButton {
-        let button = NSPopUpButton(frame: .zero, pullsDown: true)
-        button.controlSize = .small
-        button.imagePosition = .imageOnly
-        (button.cell as? NSPopUpButtonCell)?.arrowPosition = .noArrow
-        /* The first item is the pull-down button's label */
-        button.menu?.addItem(NSMenuItem())
-        button.menu?.items.first?.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
-        button.menu?.delegate = context.coordinator
-        button.toolTip = NSLocalizedString("AppsView.add.help", comment: "Add app hint")
-        return button
-    }
-
-    func updateNSView(_: NSPopUpButton, context: Context) {
-        context.coordinator.watcher = watcher
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(watcher: watcher)
-    }
-
-    class Coordinator: NSObject, NSMenuDelegate {
-        var watcher: TBAppWatcher
-
-        init(watcher: TBAppWatcher) {
-            self.watcher = watcher
-        }
-
-        func menuNeedsUpdate(_ menu: NSMenu) {
-            let label = menu.items.first
-            menu.removeAllItems()
-            if let label = label {
-                menu.addItem(label)
-            }
-            for app in watcher.runningAppsToAdd {
-                let item = NSMenuItem(title: app.localizedName ?? app.bundleIdentifier ?? "",
-                                      action: #selector(addRunningApp(_:)), keyEquivalent: "")
-                item.target = self
-                item.representedObject = app.bundleURL
-                let icon = app.icon
-                icon?.size = NSSize(width: 16, height: 16)
-                item.image = icon
-                menu.addItem(item)
-            }
-            if menu.items.count > 1 {
-                menu.addItem(.separator())
-            }
-            let choose = NSMenuItem(title: NSLocalizedString("AppsView.add.choose", comment: "Choose app item"),
-                                    action: #selector(chooseApp), keyEquivalent: "")
-            choose.target = self
-            menu.addItem(choose)
-        }
-
-        @objc private func addRunningApp(_ sender: NSMenuItem) {
-            if let url = sender.representedObject as? URL {
-                watcher.add(url: url)
-            }
-        }
-
-        @objc private func chooseApp() {
-            let panel = NSOpenPanel()
-            panel.allowedContentTypes = [.applicationBundle]
-            panel.directoryURL = URL(fileURLWithPath: "/Applications")
-            panel.canChooseDirectories = false
-            panel.allowsMultipleSelection = true
-            panel.message = NSLocalizedString("AppsView.add.message", comment: "Open panel message")
-            NSApp.activate(ignoringOtherApps: true)
-            if panel.runModal() == .OK {
-                for url in panel.urls {
-                    watcher.add(url: url)
-                }
-            }
-            /* Transient popover closes when the panel takes the focus */
-            if !TBStatusItem.shared.isPopoverShown {
-                TBStatusItem.shared.showPopover(nil)
-            }
-        }
-    }
-}
-
-private struct AppsView: View {
-    @EnvironmentObject var timer: TBTimer
-    @ObservedObject var watcher: TBAppWatcher
-    @State private var selection: String?
-    private var minStr = NSLocalizedString("IntervalsView.min", comment: "min")
-    private var secStr = NSLocalizedString("AppsView.sec", comment: "sec")
-
-    init(watcher: TBAppWatcher) {
-        self.watcher = watcher
-    }
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Toggle(isOn: $timer.suggestStart) {
-                Text(NSLocalizedString("AppsView.suggestStart.label",
-                                       comment: "Suggest starting label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch).controlSize(.mini)
-                .help(NSLocalizedString("AppsView.suggestStart.help",
-                                        comment: "Suggest starting hint"))
-                .onChange(of: timer.suggestStart) { _ in
-                    timer.updateAppWatcher()
-                }
-            Stepper(value: $timer.suggestStartAfter, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("AppsView.suggestStartAfter.label",
-                                           comment: "Suggest after label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.suggestStartAfter))
-                }
-            }
-            .help(NSLocalizedString("AppsView.suggestStartAfter.help", comment: "Suggest after hint"))
-            .onChange(of: timer.suggestStartAfter) { _ in
-                timer.updateAppWatcher()
-            }
-            Stepper(value: $timer.suggestStartGracePeriod, in: 0 ... 600, step: 30) {
-                HStack {
-                    Text(NSLocalizedString("AppsView.gracePeriod.label",
-                                           comment: "Grace period label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(secStr, timer.suggestStartGracePeriod))
-                }
-            }
-            .help(NSLocalizedString("AppsView.gracePeriod.help", comment: "Grace period hint"))
-            .onChange(of: timer.suggestStartGracePeriod) { _ in
-                timer.updateAppWatcher()
-            }
-            List(watcher.watchedApps, selection: $selection) { app in
-                HStack(spacing: 4) {
-                    Image(nsImage: app.icon)
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                    Text(app.displayName)
-                        .lineLimit(1)
-                }
-                .frame(height: 16)
-            }
-            .listStyle(.bordered(alternatesRowBackgrounds: true))
-            /* Five rows, the popover is sized to fit the tallest tab */
-            .frame(minHeight: 112, idealHeight: 112, maxHeight: .infinity)
-            HStack(spacing: 4) {
-                AddAppButton(watcher: watcher).fixedSize()
-                Button {
-                    if let selection = selection {
-                        watcher.remove(id: selection)
-                        self.selection = nil
-                    }
-                } label: {
-                    Image(systemName: "minus").frame(width: 12)
-                }
-                .disabled(selection == nil)
-                .help(NSLocalizedString("AppsView.remove.help", comment: "Remove app hint"))
-                Spacer()
-            }
-        }
-        .controlSize(.small)
-        .padding(4)
-    }
-}
-
-enum ChildView: Int, CaseIterable {
-    case intervals, settings, sounds, apps
-
-    var label: String {
-        switch self {
-        case .intervals:
-            return NSLocalizedString("TBPopoverView.intervals.label", comment: "Intervals label")
-        case .settings:
-            return NSLocalizedString("TBPopoverView.settings.label", comment: "Settings label")
-        case .sounds:
-            return NSLocalizedString("TBPopoverView.sounds.label", comment: "Sounds label")
-        case .apps:
-            return NSLocalizedString("TBPopoverView.apps.label", comment: "Apps label")
-        }
-    }
-}
-
-/*
- SwiftUI segmented picker is inset from the edges on macOS,
- use AppKit control to fill the width and align with the buttons.
- */
-private struct ChildViewPicker: NSViewRepresentable {
-    @Binding var selection: ChildView
-
-    func makeNSView(context: Context) -> NSSegmentedControl {
-        let control = NSSegmentedControl(labels: ChildView.allCases.map(\.label),
-                                         trackingMode: .selectOne,
-                                         target: context.coordinator,
-                                         action: #selector(Coordinator.selectionChanged(_:)))
-        control.segmentDistribution = .fillEqually
-        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        return control
-    }
-
-    func updateNSView(_ control: NSSegmentedControl, context _: Context) {
-        control.selectedSegment = selection.rawValue
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(selection: $selection)
-    }
-
-    class Coordinator: NSObject {
-        var selection: Binding<ChildView>
-
-        init(selection: Binding<ChildView>) {
-            self.selection = selection
-        }
-
-        @objc func selectionChanged(_ sender: NSSegmentedControl) {
-            selection.wrappedValue = ChildView(rawValue: sender.selectedSegment) ?? .intervals
-        }
-    }
-}
-
 /* Large buttons are capsules since macOS 26, keep the rounded rectangle */
 private struct MainButtonSize: ViewModifier {
     func body(content: Content) -> some View {
@@ -376,16 +15,37 @@ private struct MainButtonSize: ViewModifier {
     }
 }
 
+/* Work intervals of the current set: done, in progress, to go */
+private struct SetProgressView: View {
+    @ObservedObject var timer: TBTimer
+
+    var body: some View {
+        let total = max(timer.workIntervalsInSet, 1)
+        let done = min(timer.consecutiveWorkIntervals, total)
+        HStack(spacing: 6) {
+            ForEach(0 ..< total, id: \.self) { index in
+                if index < done {
+                    Circle().fill(Color.accentColor)
+                } else if index == done, timer.state == .work {
+                    Circle().strokeBorder(Color.accentColor, lineWidth: 1.5)
+                } else {
+                    Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
+                }
+            }
+            .frame(width: 7, height: 7)
+        }
+        .frame(maxWidth: .infinity)
+        .help(String.localizedStringWithFormat(
+            NSLocalizedString("TBPopoverView.setProgress.help", comment: "Set progress hint"),
+            done, total
+        ))
+    }
+}
+
 struct TBPopoverView: View {
     @ObservedObject var timer: TBTimer
     @State private var buttonHovered = false
     @State private var lastMainButtonClick = Date.distantPast
-    @State private var activeChildView: ChildView
-
-    init(timer: TBTimer, childView: ChildView = .intervals) {
-        self.timer = timer
-        _activeChildView = State(initialValue: childView)
-    }
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
@@ -447,33 +107,19 @@ struct TBPopoverView: View {
             }
             .modifier(MainButtonSize())
 
-            ChildViewPicker(selection: $activeChildView)
-
-            GroupBox {
-                switch activeChildView {
-                case .intervals:
-                    IntervalsView().environmentObject(timer)
-                case .settings:
-                    SettingsView().environmentObject(timer)
-                case .sounds:
-                    SoundsView().environmentObject(timer.player)
-                case .apps:
-                    AppsView(watcher: timer.appWatcher).environmentObject(timer)
-                }
-            }
+            SetProgressView(timer: timer)
 
             Group {
                 Button {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.orderFrontStandardAboutPanel()
+                    TBStatusItem.shared.showSettings()
                 } label: {
-                    Text(NSLocalizedString("TBPopoverView.about.label",
-                                           comment: "About label"))
+                    Text(NSLocalizedString("TBPopoverView.settings.label",
+                                           comment: "Settings label"))
                     Spacer()
-                    Text("⌘ A").foregroundColor(Color.gray)
+                    Text("⌘ ,").foregroundColor(Color.gray)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut("a")
+                .keyboardShortcut(",")
                 Button {
                     NSApplication.shared.terminate(self)
                 } label: {
@@ -500,8 +146,6 @@ struct TBPopoverView: View {
                 }
             )
         #endif
-            /* Use values from GeometryReader */
-//            .frame(width: 240, height: 276)
             .padding(12)
     }
 }

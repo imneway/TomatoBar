@@ -26,7 +26,10 @@ class TBTimer: ObservableObject {
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
-    private var consecutiveWorkIntervals: Int = 0
+    /* Work intervals finished in the current set, kept through the long break */
+    @Published private(set) var consecutiveWorkIntervals: Int = 0
+    /* The set ends with the long break, start over with the next work interval */
+    private var longRestStarted = false
     private var notificationCenter = TBNotificationCenter()
     public let appWatcher = TBAppWatcher()
     private var finishTime: Date!
@@ -318,9 +321,10 @@ class TBTimer: ObservableObject {
     private func onWorkStart(context ctx: TBStateMachine.Context) {
         /* Clear the start suggestion or the waiting notification */
         notificationCenter.clear()
-        if ctx.fromState == .workDone, isLongRestDue {
-            /* Long break was skipped */
+        /* After the long break, or skipping it */
+        if longRestStarted || (ctx.fromState == .workDone && isLongRestDue) {
             consecutiveWorkIntervals = 0
+            longRestStarted = false
         }
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
@@ -358,7 +362,7 @@ class TBTimer: ObservableObject {
         if isLongRestDue {
             length = longRestIntervalLength
             imgName = .longRest
-            consecutiveWorkIntervals = 0
+            longRestStarted = true
         }
         TBStatusItem.shared.setIcon(name: imgName)
         startTimer(seconds: length * 60)
@@ -387,5 +391,6 @@ class TBTimer: ObservableObject {
         lastReminderTime = nil
         TBStatusItem.shared.setIcon(name: .idle)
         consecutiveWorkIntervals = 0
+        longRestStarted = false
     }
 }

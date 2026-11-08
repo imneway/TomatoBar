@@ -14,10 +14,7 @@
 "SoundsView.isTickingEnabled.label" = "滴答声";
 "TBPopoverView.start.label" = "开始";
 "TBPopoverView.stop.label" = "停止";
-"TBPopoverView.intervals.label" = "时长";
-"TBPopoverView.settings.label" = "设置";
-"TBPopoverView.sounds.label" = "声音";
-"TBPopoverView.about.label" = "关于";
+"TBPopoverView.settings.label" = "设置…";
 "TBPopoverView.quit.label" = "退出";
 "TBTimer.onRestStart.title" = "时间到";
 "TBTimer.onRestStart.short.body" = "小憩时间到!";
@@ -34,7 +31,6 @@
 "TBNotification.startWork.title" = "开始工作";
 "TBTimer.onStartSuggested.title" = "忘了计时？";
 "TBTimer.onStartSuggested.body" = "你已经工作了一会儿，开始一个工作阶段吧";
-"TBPopoverView.apps.label" = "应用";
 "AppsView.suggestStart.label" = "使用时提醒开始计时";
 "AppsView.suggestStart.help" = "未计时却在这些应用中持续工作时发送通知";
 "AppsView.add.help" = "添加应用";
@@ -46,3 +42,9 @@
 "AppsView.suggestStartAfter.help" = "在这些应用中持续工作多久后发送提示";
 "AppsView.gracePeriod.label" = "允许离开:";
 "AppsView.gracePeriod.help" = "切到其他应用不超过这个时长不算中断";
+"TBPopoverView.setProgress.help" = "本组已完成 %d / %d 个工作时段";
+"SettingsWindow.general.label" = "通用";
+"SettingsWindow.intervals.label" = "时长";
+"SettingsWindow.sounds.label" = "声音";
+"SettingsWindow.apps.label" = "应用";
+"SettingsWindow.about.label" = "关于 TomatoBar";
