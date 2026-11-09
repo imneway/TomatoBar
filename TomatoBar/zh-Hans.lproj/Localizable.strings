@@ -42,7 +42,6 @@
 "AppsView.suggestStartAfter.help" = "在这些应用中持续工作多久后发送提示";
 "AppsView.gracePeriod.label" = "允许离开:";
 "AppsView.gracePeriod.help" = "切到其他应用不超过这个时长不算中断";
-"TBPopoverView.setProgress.help" = "本组已完成 %d / %d 个工作时段";
 "SettingsWindow.general.label" = "通用";
 "SettingsWindow.intervals.label" = "时长";
 "SettingsWindow.sounds.label" = "声音";

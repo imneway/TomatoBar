@@ -42,7 +42,6 @@
 "AppsView.suggestStartAfter.help" = "이 앱에서 이만큼 작업하면 제안합니다";
 "AppsView.gracePeriod.label" = "허용 이탈 시간:";
 "AppsView.gracePeriod.help" = "이 시간 이내로 다른 앱에 전환해도 작업이 중단되지 않습니다";
-"TBPopoverView.setProgress.help" = "이번 세트에서 %d / %d개의 작업 간격 완료";
 "SettingsWindow.general.label" = "일반";
 "SettingsWindow.intervals.label" = "간격";
 "SettingsWindow.sounds.label" = "사운드";

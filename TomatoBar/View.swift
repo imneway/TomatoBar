@@ -15,36 +15,8 @@ private struct MainButtonSize: ViewModifier {
     }
 }
 
-/* Work intervals of the current set: done, in progress, to go */
-private struct SetProgressView: View {
-    @ObservedObject var timer: TBTimer
-
-    var body: some View {
-        let total = max(timer.workIntervalsInSet, 1)
-        let done = min(timer.consecutiveWorkIntervals, total)
-        HStack(spacing: 6) {
-            ForEach(0 ..< total, id: \.self) { index in
-                if index < done {
-                    Circle().fill(Color.accentColor)
-                } else if index == done, timer.state == .work {
-                    Circle().strokeBorder(Color.accentColor, lineWidth: 1.5)
-                } else {
-                    Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
-                }
-            }
-            .frame(width: 7, height: 7)
-        }
-        .frame(maxWidth: .infinity)
-        .help(String.localizedStringWithFormat(
-            NSLocalizedString("TBPopoverView.setProgress.help", comment: "Set progress hint"),
-            done, total
-        ))
-    }
-}
-
 struct TBPopoverView: View {
     @ObservedObject var timer: TBTimer
-    @State private var buttonHovered = false
     @State private var lastMainButtonClick = Date.distantPast
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
@@ -59,16 +31,24 @@ struct TBPopoverView: View {
         case .idle:
             return startLabel
         case .work, .rest:
-            return buttonHovered ? stopLabel : timer.timeLeftString
+            return stopLabel
         case .workDone:
-            return "\(startRestLabel)  \(timer.timeLeftString)"
+            return startRestLabel
         case .restDone:
-            return "\(startWorkLabel)  \(timer.timeLeftString)"
+            return startWorkLabel
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            /* About 80% of the popover width, overtime shrinks to fit */
+            Text(timer.state == .idle ? timer.workIntervalString : timer.timeLeftString)
+                .font(.system(size: 68, weight: .light).monospacedDigit())
+                .foregroundColor(timer.state == .idle ? .secondary : .primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .frame(maxWidth: .infinity)
+
             HStack(spacing: 8) {
                 Button {
                     /* Popover stays open, so a double click would undo the first one */
@@ -81,18 +61,9 @@ struct TBPopoverView: View {
                     } else {
                         timer.startStop()
                     }
-                    /*
-                     Keep the popover open for the next click, but don't show
-                     "Stop" under the cursor right after starting
-                     */
-                    buttonHovered = false
                 } label: {
                     Text(mainButtonLabel)
-                        .font(.system(.body).monospacedDigit())
                         .frame(maxWidth: .infinity)
-                }
-                .onHover { over in
-                    buttonHovered = over
                 }
                 .keyboardShortcut(.defaultAction)
 
@@ -106,8 +77,6 @@ struct TBPopoverView: View {
                 }
             }
             .modifier(MainButtonSize())
-
-            SetProgressView(timer: timer)
 
             Group {
                 Button {

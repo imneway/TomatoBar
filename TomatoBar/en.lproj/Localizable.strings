@@ -42,7 +42,6 @@
 "AppsView.suggestStartAfter.help" = "Time spent in the apps before the suggestion";
 "AppsView.gracePeriod.label" = "Allowed time away:";
 "AppsView.gracePeriod.help" = "Switching to other apps for up to this long doesn't interrupt the work";
-"TBPopoverView.setProgress.help" = "%d of %d work intervals done in this set";
 "SettingsWindow.general.label" = "General";
 "SettingsWindow.intervals.label" = "Intervals";
 "SettingsWindow.sounds.label" = "Sounds";

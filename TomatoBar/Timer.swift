@@ -26,10 +26,7 @@ class TBTimer: ObservableObject {
 
     private var stateMachine = TBStateMachine(state: .idle)
     public let player = TBPlayer()
-    /* Work intervals finished in the current set, kept through the long break */
-    @Published private(set) var consecutiveWorkIntervals: Int = 0
-    /* The set ends with the long break, start over with the next work interval */
-    private var longRestStarted = false
+    private var consecutiveWorkIntervals: Int = 0
     private var notificationCenter = TBNotificationCenter()
     public let appWatcher = TBAppWatcher()
     private var finishTime: Date!
@@ -165,6 +162,11 @@ class TBTimer: ObservableObject {
         stateMachine <-! .startNext
     }
 
+    /* Length of the next work interval, shown while idle */
+    var workIntervalString: String {
+        timerFormatter.string(from: TimeInterval(workIntervalLength * 60))!
+    }
+
     func updateTimeLeft() {
         guard finishTime != nil else {
             return
@@ -191,6 +193,8 @@ class TBTimer: ObservableObject {
         timer!.setEventHandler(handler: onTimerTick)
         timer!.setCancelHandler(handler: onTimerCancel)
         timer!.resume()
+        /* The first tick is async, don't show an empty or stale countdown meanwhile */
+        updateTimeLeft()
     }
 
     private func stopTimer() {
@@ -321,10 +325,9 @@ class TBTimer: ObservableObject {
     private func onWorkStart(context ctx: TBStateMachine.Context) {
         /* Clear the start suggestion or the waiting notification */
         notificationCenter.clear()
-        /* After the long break, or skipping it */
-        if longRestStarted || (ctx.fromState == .workDone && isLongRestDue) {
+        if ctx.fromState == .workDone, isLongRestDue {
+            /* Long break was skipped */
             consecutiveWorkIntervals = 0
-            longRestStarted = false
         }
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
@@ -362,7 +365,7 @@ class TBTimer: ObservableObject {
         if isLongRestDue {
             length = longRestIntervalLength
             imgName = .longRest
-            longRestStarted = true
+            consecutiveWorkIntervals = 0
         }
         TBStatusItem.shared.setIcon(name: imgName)
         startTimer(seconds: length * 60)
@@ -391,6 +394,5 @@ class TBTimer: ObservableObject {
         lastReminderTime = nil
         TBStatusItem.shared.setIcon(name: .idle)
         consecutiveWorkIntervals = 0
-        longRestStarted = false
     }
 }
