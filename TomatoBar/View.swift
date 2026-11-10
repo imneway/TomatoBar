@@ -43,8 +43,7 @@ struct TBPopoverView: View {
         VStack(alignment: .leading, spacing: 8) {
             /* Overtime shrinks to fit */
             Text(timer.state == .idle ? timer.workIntervalString : timer.timeLeftString)
-                .font(.system(size: 54, weight: .medium).monospacedDigit())
-                .foregroundColor(timer.state == .idle ? .secondary : .primary)
+                .font(.system(size: 48, weight: .medium).monospacedDigit())
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity)
