@@ -41,9 +41,9 @@ struct TBPopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            /* About 80% of the popover width, overtime shrinks to fit */
+            /* Overtime shrinks to fit */
             Text(timer.state == .idle ? timer.workIntervalString : timer.timeLeftString)
-                .font(.system(size: 68, weight: .light).monospacedDigit())
+                .font(.system(size: 54, weight: .medium).monospacedDigit())
                 .foregroundColor(timer.state == .idle ? .secondary : .primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
